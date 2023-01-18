@@ -19,14 +19,6 @@ namespace MasterNode
 
         private static async Task Main(string[] args)
         {
-            //    Console.WriteLine("원하는 job의 이름과 확장자를 입력하세요");
-
-            //    global.jobName = Console.ReadLine();
-
-            //    Console.WriteLine("실행 시킬 시각을 입력 : yyyy-MM-dd HH:mm:ss");
-            //    string date = Console.ReadLine();
-            //    DateTime da =Convert.ToDateTime(date);
-            //    time.timer = da;
             int SchduleType = 1;
             
             string startDT = "2023-01-18T15:08:00";
@@ -139,10 +131,6 @@ namespace MasterNode
         {
             DateTime times = DateTime.Now;
             await Console.Out.WriteLineAsync("현재 시각 : " + times);
-            //if(times >= time.timer)
-            //{
-            //    await Console.Out.WriteLineAsync("파일 이름" + global.jobName);
-            //};
         }
     }
 }
