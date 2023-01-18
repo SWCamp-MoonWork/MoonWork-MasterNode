@@ -6,14 +6,6 @@ using System.Timers;
 
 namespace MasterNode
 {
-    //public static class global
-    //{
-    //    public static string jobName;
-    //}
-    //public static class time
-    //{
-    //    public static DateTime timer;
-    //}
     public class Program
     {
 
