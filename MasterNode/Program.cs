@@ -26,12 +26,24 @@ namespace MasterNode
         string? JobName;
         int IsUse;
         string? WorkflowName;
-        string? WorkflowBlob;
+        byte[]? WorkflowBlob;
         string? Note;
         DateTime SaveDate;
         long UserId;
-
     }
+
+    //public class Job2
+    //{
+    //    public long JobId { get; set; }
+    //    public string? JobName { get; set; }
+    //    public int? IsUse { get; set; }
+    //    public string? WorkflowName { get; set; }
+    //    public byte[]? WorkflowBlob { get; set; }
+    //    public string? Note { get; set; }
+    //    public DateTime? SaveDate { get; set; }
+    //    public long? UserId { get; set; }
+    //}
+
     public class Program
     {
         static string targetURL = "http://20.39.194.244:5000/v1/job/list";
@@ -45,10 +57,21 @@ namespace MasterNode
             //Console.WriteLine(r);
 
             string r = JsonConvert.SerializeObject(webclientResult);
-            Console.WriteLine(r);
-            var model = JsonConvert.DeserializeObject<List<JobModel>>(r);
+            
+            r = r.Replace("\r\n", "").Replace("\n", "").Replace(@"\", "");
+            
+            if (r.Substring(0, 2) == @"""[")
+                r = r.Substring(1, r.Length - 1);
+            if (r.Substring(r.Length - 2, 2) == @"]""")
+                r = r.Substring(0, r.Length - 1);
 
-            Console.WriteLine(model);
+            Console.WriteLine(r);
+
+            var Jobs = System.Text.Json.JsonSerializer.Deserialize<List<JobModel>>(r);
+
+            //var model = JsonConvert.DeserializeObject<List<JobModel>>(r);
+
+            Console.WriteLine(Jobs);
 
             LogProvider.SetCurrentLogProvider(new ConsoleLogProvider());
             // Grab the Scheduler instance from the Factory
