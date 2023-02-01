@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Numerics;
+using Microsoft.Extensions.Hosting;
 
 namespace MasterNode
 {
@@ -20,35 +21,103 @@ namespace MasterNode
 
     }
 
-    public record JobModel
+    public class Schedule_IsUseSelectModel
     {
-        long JobId;
-        string? JobName;
-        int IsUse;
-        string? WorkflowName;
-        string? WorkflowBlob;
-        string? Note;
-        DateTime SaveDate;
-        long UserId;
+        public long ScheduleId { get; set; }
+        public long JobId { get; set; }
+        public string? ScheduleName { get; set; }
+        public Boolean IsUse { get; set; }
+        public Boolean ScheduleType { get; set; }
+        public DateTime? OneTimeOccurDT { get; set; }
+        public String? CronExpression { get; set; }
+        public DateTime? ScheduleStartDT { get; set; }
+        public DateTime? ScheduleEndDT { get; set; }
+        public DateTime SaveDate { get; set; }
+        public long UserId { get; set; }
+        public Boolean JobIsUse { get; set; }
+        public string? WorkflowName { get; set; }
+    }
 
+    public class HostModel
+    {
+        public long HostId { get; set; }
+        public string? HostName { get; set; }
+        public string? HostIp { get; set; }
+        public Boolean IsUse { get; set; }
+        public string? Role { get; set; }
+        public string? EndPoint { get; set; }
+        public string? Note { get; set; }
+        public DateTime SaveDate { get; set; }
+        public long UserId { get; set; }
     }
     public class Program
     {
-        static string targetURL = "http://20.39.194.244:5000/v1/job/list";
+        static string schduleList = "http://20.39.194.244:5000/v1/job/Schedule_IsUseSelect";
+        static string hostList = "http://20.39.194.244:5000/v1/host/isusetrue";
         private static async Task Main(string[] args)
         {
-            string webclientResult = callWebClient();
-            //var r = JObject.Parse(webclientResult);
-            //var r = JArray.Parse(webclientResult);
-            //var list = r["list"];
+            string allSchduleList = callSchduleList();
+            string r = JsonConvert.SerializeObject(allSchduleList);
 
-            //Console.WriteLine(r);
+            r = r.Replace("\r\n", "").Replace("\n", "").Replace(@"\", "");
 
-            string r = JsonConvert.SerializeObject(webclientResult);
+            if (r.Substring(0, 2) == @"""[")
+                r = r.Substring(1, r.Length - 1);
+            if (r.Substring(r.Length - 2, 2) == @"]""")
+                r = r.Substring(0, r.Length - 1);
+
             Console.WriteLine(r);
-            var model = JsonConvert.DeserializeObject<List<JobModel>>(r);
 
-            Console.WriteLine(model);
+            var Jobs = System.Text.Json.JsonSerializer.Deserialize<List<Schedule_IsUseSelectModel>>(r);
+
+            Console.WriteLine(Jobs);
+            
+            foreach (var a in Jobs)
+            {
+                Console.WriteLine("==================================");
+                Console.WriteLine("ScheduleId : " + a.ScheduleId);
+                Console.WriteLine("JobId : " + a.JobId);
+                Console.WriteLine("Schedulename : " + a.ScheduleName);
+                Console.WriteLine("IsUse : " + a.IsUse);
+                Console.WriteLine("Scheduletype : " + a.ScheduleType);
+                Console.WriteLine("OneTimeOccurDT : " + a.OneTimeOccurDT);
+                Console.WriteLine("CronExpression : " + a.CronExpression);
+                Console.WriteLine("ScheduleStartDT : " + a.ScheduleStartDT);
+                Console.WriteLine("ScheduleEndDT : " + a.ScheduleEndDT);
+                Console.WriteLine("SaveDate : " + a.SaveDate);
+                Console.WriteLine("UserId : " + a.UserId);
+                Console.WriteLine("Jobisuse : " + a.JobIsUse);
+                Console.WriteLine("WorkflowName : " + a.WorkflowName);
+                Console.WriteLine("==================================");
+                
+            } 
+            string allHostList = callHostList();
+            string n = JsonConvert.SerializeObject(allHostList);
+            Console.WriteLine(n);
+
+            n = n.Replace("\r\n", "").Replace("\n", "").Replace(@"\", "");
+
+            if (n.Substring(0, 2) == @"""[")
+                n = n.Substring(1, n.Length - 1);
+            if (n.Substring(n.Length - 2, 2) == @"]""")
+                n = n.Substring(0, n.Length - 1);
+
+            var Host = System.Text.Json.JsonSerializer.Deserialize<List<HostModel>>(n);
+
+            foreach (var a in Host)
+            {
+                Console.WriteLine("==================================");
+                Console.WriteLine("JobId : " + a.HostId);
+                Console.WriteLine("JobName : " + a.HostName);
+                Console.WriteLine("HostIp : " + a.HostIp);
+                Console.WriteLine("IsUse : " + a.IsUse);
+                Console.WriteLine("workflowName : " + a.Role);
+                Console.WriteLine("workflowBlob : " + a.EndPoint);
+                Console.WriteLine("Note : " + a.Note);
+                Console.WriteLine("SaveDate : " + a.SaveDate);
+                Console.WriteLine("UserId : " + a.UserId);
+                Console.WriteLine("==================================");
+            }
 
             LogProvider.SetCurrentLogProvider(new ConsoleLogProvider());
             // Grab the Scheduler instance from the Factory
@@ -126,14 +195,14 @@ namespace MasterNode
                 throw new NotImplementedException();
             }
         }
-        public static string callWebClient()
+        public static string callSchduleList()
         {
             string result = string.Empty;
             try
             {
                 WebClient client = new WebClient();
 
-                using (Stream data = client.OpenRead(targetURL))
+                using (Stream data = client.OpenRead(schduleList))
                 {
                     using (StreamReader reader = new StreamReader(data))
                     {
@@ -151,29 +220,53 @@ namespace MasterNode
             }
             return result;
         }
-        public static string callWebRequest()
+        public static string callHostList()
         {
-            string responseFromServer = string.Empty;
-
+            string result = string.Empty;
             try
             {
-                WebRequest request = WebRequest.Create(targetURL);
-                request.Method = "GET";
-                request.ContentType = "application/json";
-
-                using (WebResponse response = request.GetResponse())
-                using (Stream dataStream = response.GetResponseStream())
-                using (StreamReader reader = new StreamReader(dataStream))
+                WebClient client = new WebClient();
+                using (Stream data = client.OpenRead(hostList))
                 {
-                    responseFromServer = reader.ReadToEnd();
+                    using (StreamReader reader = new StreamReader(data))
+                    {
+                        string s = reader.ReadToEnd();
+                        result = s;
+
+                        reader.Close();
+                        data.Close();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            return responseFromServer;
+            return result;
         }
+        //public static string callWebRequest()
+        //{
+        //    string responseFromServer = string.Empty;
+
+        //    try
+        //    {
+        //        WebRequest request = WebRequest.Create(schduleList);
+        //        request.Method = "GET";
+        //        request.ContentType = "application/json";
+
+        //        using (WebResponse response = request.GetResponse())
+        //        using (Stream dataStream = response.GetResponseStream())
+        //        using (StreamReader reader = new StreamReader(dataStream))
+        //        {
+        //            responseFromServer = reader.ReadToEnd();
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.ToString());
+        //    }
+        //    return responseFromServer;
+        //}
 
     }
 
