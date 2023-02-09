@@ -10,17 +10,32 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Numerics;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Console;
+using System.Text;
+using MasterNode.Net;
+using System.Web;
 
 namespace MasterNode
 {
-    public class date
+    public class Data
     {
-        public static string[][] HostInfo = {new string[] { "host1", "jobname1", "2023-01-27T15:01:00", "2023-01-27T20:00:40", "0/5 * * * * ?", "1.sh", "1" },
-                                             new string[] { "host2", "jobname2", "2023-01-27T15:01:00", "2023-01-27T20:00:40", "* * * * * ?", "2.sh", "0" },
-                                             new string[] { "host3", "jobname3", "2023-01-27T15:01:00", "2023-01-27T20:00:40", "0/10 * * * * ?", "3.sh", "0" } };
-
+        public long recentHostId; // 최근에 일을 시킨 HostId
     }
-
+    public class WorkerHostModel
+    {
+        public string? WorkflowName { get; set; }
+        public long JobId { get; set; }
+        public long HostId { get; set; }
+    }
+    public class Loop
+    {
+        public int? startHour { get; set; }
+        public int? startMin { get; set; }
+        public int? startSec { get; set; }
+        public int? startDay { get; set; }
+        public int? startMonth { get; set; }
+        public int? startYear { get; set; }
+    }
     public class Schedule_IsUseSelectModel
     {
         public long ScheduleId { get; set; }
@@ -50,127 +65,132 @@ namespace MasterNode
         public DateTime SaveDate { get; set; }
         public long UserId { get; set; }
     }
+
     public class Program
     {
-        static string schduleList = "http://20.39.194.244:5000/v1/job/Schedule_IsUseSelect";
-        static string hostList = "http://20.39.194.244:5000/v1/host/isusetrue";
         private static async Task Main(string[] args)
         {
-            string allSchduleList = callSchduleList();
-            string r = JsonConvert.SerializeObject(allSchduleList);
-
-            r = r.Replace("\r\n", "").Replace("\n", "").Replace(@"\", "");
-
-            if (r.Substring(0, 2) == @"""[")
-                r = r.Substring(1, r.Length - 1);
-            if (r.Substring(r.Length - 2, 2) == @"]""")
-                r = r.Substring(0, r.Length - 1);
-
-            Console.WriteLine(r);
-
-            var Jobs = System.Text.Json.JsonSerializer.Deserialize<List<Schedule_IsUseSelectModel>>(r);
-
-            Console.WriteLine(Jobs);
-            
-            foreach (var a in Jobs)
-            {
-                Console.WriteLine("==================================");
-                Console.WriteLine("ScheduleId : " + a.ScheduleId);
-                Console.WriteLine("JobId : " + a.JobId);
-                Console.WriteLine("Schedulename : " + a.ScheduleName);
-                Console.WriteLine("IsUse : " + a.IsUse);
-                Console.WriteLine("Scheduletype : " + a.ScheduleType);
-                Console.WriteLine("OneTimeOccurDT : " + a.OneTimeOccurDT);
-                Console.WriteLine("CronExpression : " + a.CronExpression);
-                Console.WriteLine("ScheduleStartDT : " + a.ScheduleStartDT);
-                Console.WriteLine("ScheduleEndDT : " + a.ScheduleEndDT);
-                Console.WriteLine("SaveDate : " + a.SaveDate);
-                Console.WriteLine("UserId : " + a.UserId);
-                Console.WriteLine("Jobisuse : " + a.JobIsUse);
-                Console.WriteLine("WorkflowName : " + a.WorkflowName);
-                Console.WriteLine("==================================");
-                
-            } 
-            string allHostList = callHostList();
-            string n = JsonConvert.SerializeObject(allHostList);
-            Console.WriteLine(n);
-
-            n = n.Replace("\r\n", "").Replace("\n", "").Replace(@"\", "");
-
-            if (n.Substring(0, 2) == @"""[")
-                n = n.Substring(1, n.Length - 1);
-            if (n.Substring(n.Length - 2, 2) == @"]""")
-                n = n.Substring(0, n.Length - 1);
-
-            var Host = System.Text.Json.JsonSerializer.Deserialize<List<HostModel>>(n);
-
-            foreach (var a in Host)
-            {
-                Console.WriteLine("==================================");
-                Console.WriteLine("JobId : " + a.HostId);
-                Console.WriteLine("JobName : " + a.HostName);
-                Console.WriteLine("HostIp : " + a.HostIp);
-                Console.WriteLine("IsUse : " + a.IsUse);
-                Console.WriteLine("workflowName : " + a.Role);
-                Console.WriteLine("workflowBlob : " + a.EndPoint);
-                Console.WriteLine("Note : " + a.Note);
-                Console.WriteLine("SaveDate : " + a.SaveDate);
-                Console.WriteLine("UserId : " + a.UserId);
-                Console.WriteLine("==================================");
-            }
-
             LogProvider.SetCurrentLogProvider(new ConsoleLogProvider());
             // Grab the Scheduler instance from the Factory
             StdSchedulerFactory factory = new StdSchedulerFactory();
             IScheduler scheduler = await factory.GetScheduler();
             await scheduler.Start();
 
-            foreach (string[] arr in date.HostInfo)
+            var Host = Net.RAPI.GetHostList();
+            Data data = new Data();
+            var schedules = Net.RAPI.GetJobSchedule();
+            int k = 0;
+            for (int i = 0; i < Host.Count; i++)
             {
-                if (arr[6] == "1") continue;
-                string startDT = arr[2];
-                string endDT = arr[3];
-
-                string[] dates = startDT.Split("T");
-                string[] datee = endDT.Split("T");
-
-                string[] yearMonthDays = dates[0].Split("-");
-                string[] Times = dates[1].Split(":");
-                int secs = Int32.Parse(Times[2]);
-                int mins = Int32.Parse(Times[1]);
-                int Hours = Int32.Parse(Times[0]);
-
-                int days = Int32.Parse(yearMonthDays[2]);
-                int months = Int32.Parse(yearMonthDays[1]);
-                int years = Int32.Parse(yearMonthDays[0]);
-
-                string[] yearMonthDaye = datee[0].Split("-");
-                string[] Timee = datee[1].Split(":");
-                int sece = Int32.Parse(Timee[2]);
-                int mine = Int32.Parse(Timee[1]);
-                int Houre = Int32.Parse(Timee[0]);
-
-                int daye = Int32.Parse(yearMonthDaye[2]);
-                int monthe = Int32.Parse(yearMonthDaye[1]);
-                int yeare = Int32.Parse(yearMonthDaye[0]);
-
-                IJobDetail job = JobBuilder.Create<HelloJob>()
-                    .WithIdentity(arr[0], "group1")
-                    .UsingJobData("name", arr[5])
-                    .Build();
-
-                ITrigger trigger = TriggerBuilder.Create()
-                    .WithIdentity(arr[1], "group1")
-                    .StartAt(DateBuilder.DateOf(Hours, mins, secs, days, months, years))
-                    .WithCronSchedule(arr[4])
-                    .EndAt(DateBuilder.DateOf(Houre, mine, sece, daye, monthe, yeare))
-                    .Build();
-
-                await scheduler.ScheduleJob(job, trigger);
+                Console.WriteLine(i);
+                k++;
             }
-            Console.WriteLine("Press to stop the Schedule");
-            Console.ReadKey();
+            Console.WriteLine(k);
 
+            int u = 0;
+            int s = 0;
+            foreach (var a in schedules)
+            {
+                if (schedules[s].ScheduleType == true)
+                {
+                    string startDT = schedules[s].ScheduleStartDT.ToString();
+                    string endDT = schedules[s].ScheduleEndDT.ToString();
+
+                    Console.WriteLine(startDT);
+                    Console.WriteLine(endDT);
+
+                    string[] dates = startDT.Split(" ");
+                    string[] datee = endDT.Split(" ");
+
+                    string[] yearMonthDays = dates[0].Split("/");
+                    string[] Times = dates[1].Split(":");
+                    int secs = Int32.Parse(Times[2]);
+                    int mins = Int32.Parse(Times[1]);
+                    int Hours = Int32.Parse(Times[0]);
+
+                    int days = Int32.Parse(yearMonthDays[1]);
+                    int months = Int32.Parse(yearMonthDays[0]);
+                    int years = Int32.Parse(yearMonthDays[2]);
+
+                    string[] yearMonthDaye = datee[0].Split("/");
+                    string[] Timee = datee[1].Split(":");
+                    int sece = Int32.Parse(Timee[2]);
+                    int mine = Int32.Parse(Timee[1]);
+                    int Houre = Int32.Parse(Timee[0]);
+
+                    int daye = Int32.Parse(yearMonthDaye[1]);
+                    int monthe = Int32.Parse(yearMonthDaye[0]);
+                    int yeare = Int32.Parse(yearMonthDaye[2]);
+
+                    Console.WriteLine(years);
+                    Console.WriteLine(yeare);
+                    Console.WriteLine(months);
+                    Console.WriteLine(monthe);
+                    Console.WriteLine(days);
+                    Console.WriteLine(daye);
+                    Console.WriteLine(Hours);
+                    Console.WriteLine(Houre);
+                    Console.WriteLine(mins);
+                    Console.WriteLine(mine);
+                    Console.WriteLine(secs);
+                    Console.WriteLine(sece);
+                    Console.WriteLine(schedules[s].CronExpression);
+                    IJobDetail job = JobBuilder.Create<HelloJob>()
+                    .WithIdentity(schedules[s].WorkflowName, "group1")
+                    .UsingJobData("name", schedules[s].WorkflowName)
+                    .UsingJobData("jobid", schedules[s].JobId)
+                    .UsingJobData("hostid", Host[u].HostId)
+                    .UsingJobData("hostip", Host[u].HostIp)
+                    .Build();
+
+                    ITrigger trigger = TriggerBuilder.Create()
+                        .WithIdentity(schedules[s].WorkflowName, "group1")
+                        .StartAt(DateBuilder.DateOf(Hours, mins, secs, days, months, years))
+                        .WithCronSchedule(schedules[s].CronExpression)
+                        .EndAt(DateBuilder.DateOf(Houre, mine, sece, daye, monthe, yeare))
+                        .Build();
+
+                    await scheduler.ScheduleJob(job, trigger);
+                }
+                else
+                {
+                    string oneTimeDT = schedules[s].OneTimeOccurDT.ToString();
+                    
+                    string[] dates = oneTimeDT.Split(" ");
+
+                    string[] yearMonthDays = dates[0].Split("/");
+                    string[] Times = dates[1].Split(":");
+                    int sec = Int32.Parse(Times[2]);
+                    int min = Int32.Parse(Times[1]);
+                    int Hour = Int32.Parse(Times[0]);
+
+                    int day = Int32.Parse(yearMonthDays[1]);
+                    int month = Int32.Parse(yearMonthDays[0]);
+                    int year = Int32.Parse(yearMonthDays[2]);
+
+                    IJobDetail job = JobBuilder.Create<HelloJob>()
+                    .WithIdentity(schedules[s].WorkflowName, "group1")
+                    .UsingJobData("name", schedules[s].WorkflowName)
+                    .UsingJobData("jobid", schedules[s].JobId)
+                    .UsingJobData("hostid", Host[u].HostId)
+                    .UsingJobData("hostip", Host[u].HostIp)
+                    .Build();
+
+                    ITrigger trigger = (ISimpleTrigger)TriggerBuilder.Create()
+                    .WithIdentity("trigger1", "group1")
+                    .StartAt(DateBuilder.DateOf(Hour, min, sec, day, month, year)) // some Date 
+                    .Build();
+
+                    await scheduler.ScheduleJob(job, trigger);
+                }
+                u++;
+                s++;
+                if (u >= k)
+                {
+                    u = 0;
+                }
+            }
+            Console.ReadKey();
         }
         private class ConsoleLogProvider : ILogProvider
         {
@@ -195,79 +215,6 @@ namespace MasterNode
                 throw new NotImplementedException();
             }
         }
-        public static string callSchduleList()
-        {
-            string result = string.Empty;
-            try
-            {
-                WebClient client = new WebClient();
-
-                using (Stream data = client.OpenRead(schduleList))
-                {
-                    using (StreamReader reader = new StreamReader(data))
-                    {
-                        string s = reader.ReadToEnd();
-                        result = s;
-
-                        reader.Close();
-                        data.Close();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            return result;
-        }
-        public static string callHostList()
-        {
-            string result = string.Empty;
-            try
-            {
-                WebClient client = new WebClient();
-                using (Stream data = client.OpenRead(hostList))
-                {
-                    using (StreamReader reader = new StreamReader(data))
-                    {
-                        string s = reader.ReadToEnd();
-                        result = s;
-
-                        reader.Close();
-                        data.Close();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            return result;
-        }
-        //public static string callWebRequest()
-        //{
-        //    string responseFromServer = string.Empty;
-
-        //    try
-        //    {
-        //        WebRequest request = WebRequest.Create(schduleList);
-        //        request.Method = "GET";
-        //        request.ContentType = "application/json";
-
-        //        using (WebResponse response = request.GetResponse())
-        //        using (Stream dataStream = response.GetResponseStream())
-        //        using (StreamReader reader = new StreamReader(dataStream))
-        //        {
-        //            responseFromServer = reader.ReadToEnd();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.ToString());
-        //    }
-        //    return responseFromServer;
-        //}
-
     }
 
     public class HelloJob : IJob
@@ -281,28 +228,69 @@ namespace MasterNode
             JobDataMap dataMap = context.JobDetail.JobDataMap;
 
             string jobName = dataMap.GetString("name");
-
+            long hostid = dataMap.GetInt("hostid");
+            string hostip = dataMap.GetString("hostip");
+            long jobid = dataMap.GetInt("jobid");
             DateTime times = DateTime.Now;
+            Console.WriteLine("==========================");
+            Console.WriteLine(jobName);
+            Console.WriteLine(hostid);
+            Console.WriteLine(hostip);
+            Console.WriteLine(jobid);
+            Console.WriteLine(times);
+            Console.WriteLine("==========================");
 
             await Console.Out.WriteLineAsync("현재 시각 : " + times + " / job Name : " + jobName);
 
-            //string cmd = "sudo dotnet WorkHost.dll blob/" + jobName;
-            //ProcessStartInfo psi = new ProcessStartInfo();
-            //psi.UseShellExecute = false;
-            //psi.FileName = "bash";
-            //psi.Arguments = "-c  \"" + cmd + "\"";
-            //try
-            //{
-            //    Process child = Process.Start(psi);
-            //    child.WaitForExit();
-            //}
+            string sendInfoUrl = $"http://{hostip}:5000/worker/{hostid}";
+            Console.WriteLine(sendInfoUrl);
+            string responseText = string.Empty;
 
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine(e.ToString());
-            //}
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(sendInfoUrl);
+            webRequest.Method = "POST";
+            webRequest.Timeout = 30 * 1000;
+            webRequest.ContentType = "application/json";
+
+            var obj = new WorkerHostModel
+            {
+
+                WorkflowName = jobName,
+                JobId = jobid,
+                HostId = hostid
+
+            };
+            //Data 입력받아 requset해서 data를 api로 전송하는 구간
+            //Json을 string type으로 입력해준다.
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            //보낼 데이터를 byteArray로 바꿔준다.
+            byte[] byteArray = Encoding.UTF8.GetBytes(json);
+
+            //요청 Data를 쓰는데 사용할 Stream 개체를 가져온다.
+            Stream dataStream = webRequest.GetRequestStream();
+            //전송...
+            dataStream.Write(byteArray, 0, byteArray.Length);
+            dataStream.Close();
+
+            //Data를 잘 받았는지 확인하는 response 구간
+            //응답 받기
+            using (HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse())
+            {
+                HttpStatusCode status = resp.StatusCode;
+                Console.WriteLine(status);      // status 가 정상일경우 OK가 입력된다.
+
+                // 응답과 관련된 stream을 가져온다.
+                Stream respStream = resp.GetResponseStream();
+                using (StreamReader streamReader = new StreamReader(respStream))
+                {
+                    responseText = streamReader.ReadToEnd();
+                }
+            }
+
+            Console.WriteLine(responseText);
         }
     }
 }
+
+
 
 
