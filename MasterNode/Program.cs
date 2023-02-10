@@ -232,13 +232,13 @@ namespace MasterNode
             string hostip = dataMap.GetString("hostip");
             long jobid = dataMap.GetInt("jobid");
             DateTime times = DateTime.Now;
-            Console.WriteLine("==========================");
+            Console.WriteLine("===========================");
             Console.WriteLine(jobName);
             Console.WriteLine(hostid);
             Console.WriteLine(hostip);
             Console.WriteLine(jobid);
             Console.WriteLine(times);
-            Console.WriteLine("==========================");
+            Console.WriteLine("===========================");
 
             await Console.Out.WriteLineAsync("현재 시각 : " + times + " / job Name : " + jobName);
 
