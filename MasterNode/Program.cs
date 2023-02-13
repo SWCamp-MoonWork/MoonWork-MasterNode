@@ -25,7 +25,6 @@ namespace MasterNode
     {
         public string? WorkflowName { get; set; }
         public long JobId { get; set; }
-        public long HostId { get; set; }
     }
     public class Loop
     {
@@ -254,11 +253,8 @@ namespace MasterNode
 
             var obj = new WorkerHostModel
             {
-
                 WorkflowName = jobName,
-                JobId = jobid,
-                HostId = hostid
-
+                JobId = jobid
             };
             //Data 입력받아 requset해서 data를 api로 전송하는 구간
             //Json을 string type으로 입력해준다.
