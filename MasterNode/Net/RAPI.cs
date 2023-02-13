@@ -12,7 +12,7 @@ namespace MasterNode.Net
    
     public static class RAPI
     {
-        static string host = "http://20.249.17.147:5000";
+        static string host = ignore.host;
         static string version = "v1";
         static string schduleList = $"{host}/{version}/job/Schedule_IsUseSelect";
         static string hostList = $"{host}/{version}/host/isusetrue";
