@@ -363,5 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /MasterNode.sln
 
-!ignore.cs
+#ignore ignore.csd
+ignore.cs
 
